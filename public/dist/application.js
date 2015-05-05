@@ -414,50 +414,28 @@ angular.module('payments').config(['$stateProvider',
 ]);
 'use strict';
 
-angular.module('articles').controller('PaymentsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Payments',
+angular.module('payments').controller('PaymentsController', ['$scope', '$stateParams', '$location', 'Authentication', 'Payments',
 	function($scope, $stateParams, $location, Authentication, Payments) {
 		$scope.authentication = Authentication;
-
+ 
 		$scope.create = function() {
 			var payment = new Payments({
-				title: this.title,
-				content: this.content
+				amount: this.amount,
+				message: this.message,
+				recipient: this.recipient
 			});
 			payment.$save(function(response) {
 				$location.path('payments/' + response._id);
 
-				$scope.title = '';
-				$scope.content = '';
+				$scope.amount = '';
+				$scope.message = '';
+				$scope.recipient = '';
 			}, function(errorResponse) {
 				$scope.error = errorResponse.data.message;
 			});
 		};
 
-		$scope.remove = function(payment) {
-			if (payment) {
-				payment.$remove();
 
-				for (var i in $scope.payments) {
-					if ($scope.payments[i] === payment) {
-						$scope.payments.splice(i, 1);
-					}
-				}
-			} else {
-				$scope.payment.$remove(function() {
-					$location.path('payments');
-				});
-			}
-		};
-
-		$scope.update = function() {
-			var payment = $scope.payment;
-
-			payment.$update(function() {
-				$location.path('payments/' + payment._id);
-			}, function(errorResponse) {
-				$scope.error = errorResponse.data.message;
-			});
-		};
 
 		$scope.find = function() {
 			$scope.payments = Payments.query();
@@ -465,11 +443,45 @@ angular.module('articles').controller('PaymentsController', ['$scope', '$statePa
 
 		$scope.findOne = function() {
 			$scope.payment = Payments.get({
-				articleId: $stateParams.articleId
+				paymentId: $stateParams.paymentId
 			});
 		};
 	}
 ]);
+var directives = angular.module('directives');
+
+directives.directive('autocomplete', ['$http', function($http) {
+    return function (scope, element, attrs) {
+        element.autocomplete({
+            minLength:3,
+            source:function (request, response) {
+                var url = "/search_user" + request.term;
+                $http.get(url).success( function(data) {
+                    response(data.results);
+                });
+            },
+            focus:function (event, ui) {
+                element.val(ui.item.label);
+                return false;
+            },
+            select:function (event, ui) {
+                scope.myModelId.selected = ui.item.value;
+                scope.$apply;
+                return false;
+            },
+            change:function (event, ui) {
+                if (ui.item === null) {
+                    scope.myModelId.selected = null;
+                }
+            }
+        }).data("autocomplete")._renderItem = function (ul, item) {
+            return $("<li></li>")
+                .data("item.autocomplete", item)
+                .append("<a>" + item.label + "</a>")
+                .appendTo(ul);
+        };
+    }
+}]);
 'use strict';
 
 //payments service used for communicating with the payments REST endpoints
@@ -586,8 +598,8 @@ angular.module('users').controller('AuthenticationController', ['$scope', '$http
 				// If successful we assign the response to the global user model
 				$scope.authentication.user = response;
 
-				// And redirect to the index page
-				$location.path('/');
+				// Super hacky way to redirect to new url, will replace later with angular redirect
+				window.location.replace('https://www.coinbase.com/sessions/oauth_signin?client_id=db0e75d4c1b0b7a2d22c2927280dc9ffcb478b904ee1b6d1df54d1c43f2cd4dc&meta%5Bsend_limit_amount%5D=50&redirect_uri=https%3A%2F%2Fbitslip.herokuapp.com%2Fcbredirect&response_type=code&scope=balance+send+transactions+user+reports');
 			}).error(function(response) {
 				$scope.error = response.message;
 			});
